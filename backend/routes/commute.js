@@ -8,7 +8,7 @@ export const commuteRouter = express.Router();
 
 // Hardcoded locations
 const SOURCE = "Shubha Labha Apartment";
-const DESTINATION = "Docusign RMZ Ecoworld";
+const DESTINATION = "Docusign RMZ Ecoworld Bengaluru";
 
 // Function to fetch and store commute time
 async function fetchAndStoreCommuteTime() {

@@ -69,8 +69,8 @@
     <h1>Commute Dashboard</h1>
     
     <div class="inputs">
-        <input type="text" id="source" placeholder="Source (e.g., Central Park)" value="Central Park">
-        <input type="text" id="destination" placeholder="Destination (e.g., Madison Square Garden)" value="Madison Square Garden">
+        <input type="text" id="source" placeholder="Source (e.g., Central Park)" value="">
+        <input type="text" id="destination" placeholder="Destination (e.g., Madison Square Garden)" value="">
         <button onclick="fetchCurrentCommute()">Get Current Time</button>
     </div>
 
@@ -86,6 +86,7 @@
                 <thead>
                     <tr>
                         <th>Date</th>
+                        <th>Time</th>
                         <th>Duration (min)</th>
                     </tr>
                 </thead>
@@ -131,8 +132,10 @@
                 data.forEach(record => {
                     const row = document.createElement('tr');
                     const date = new Date(record.timestamp).toLocaleDateString();
+                    const time = new Date(record.timestamp).toLocaleTimeString();
                     row.innerHTML = `
                         <td>${date}</td>
+                        <td>${time}</td>
                         <td>${record.duration.toFixed(1)}</td>
                     `;
                     tbody.appendChild(row);
