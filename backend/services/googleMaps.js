@@ -5,7 +5,7 @@ export async function fetchCommuteTime(source, destination) {
   
   try {
     console.log('Constructing URL...');
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(source)}&destinations=${encodeURIComponent(destination)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(source)}&destinations=${encodeURIComponent(destination)}&departure_time=now&key=${process.env.GOOGLE_MAPS_API_KEY}`;
     
     console.log('URL constructed (redacted):', url.replace(process.env.GOOGLE_MAPS_API_KEY, 'REDACTED'));
     console.log('Starting fetch request...');
