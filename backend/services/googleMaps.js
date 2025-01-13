@@ -35,7 +35,7 @@ export async function fetchCommuteTime(source, destination) {
       const data = await response.json();
       console.log('JSON parsed successfully');
       
-      if (!data.rows?.[0]?.elements?.[0]?.duration?.value) {
+      if (!data.rows?.[0]?.elements?.[0]?.duration_in_traffic?.value) {
         console.error('Invalid response structure:', {
           status: data.status,
           errorMessage: data.error_message,
@@ -46,7 +46,7 @@ export async function fetchCommuteTime(source, destination) {
         throw new Error(`Invalid response from Google Maps API: ${data.status || 'Unknown error'}`);
       }
 
-      const durationMinutes = data.rows[0].elements[0].duration.value / 60;
+      const durationMinutes = data.rows[0].elements[0].duration_in_traffic.value / 60;
       console.log('Successfully calculated duration:', durationMinutes, 'minutes');
       
       return durationMinutes;
