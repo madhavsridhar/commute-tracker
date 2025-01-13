@@ -2,55 +2,30 @@ import express from 'express';
 import { Commute } from '../models/Commute.js';
 import { cache } from '../index.js';
 import { fetchCommuteTime } from '../services/googleMaps.js';
+import cron from 'node-cron';
 
 export const commuteRouter = express.Router();
 
-// Test endpoint to verify route functionality
-commuteRouter.get('/test', (req, res) => {
-  console.log('Test endpoint hit');
-  res.json({ status: 'Router is working' });
-});
+// Hardcoded locations
+const SOURCE = "Shubha Labha Apartment";
+const DESTINATION = "Docusign RMZ Ecoworld";
 
-// Get current commute time
-commuteRouter.get('/current', async (req, res, next) => {
-  console.log('Current commute endpoint hit');
-  
+// Function to fetch and store commute time
+async function fetchAndStoreCommuteTime() {
+  console.log('Scheduled fetch starting...');
   try {
-    const { source, destination } = req.query;
+    const cacheKey = `${SOURCE}-${DESTINATION}`;
+    console.log('Fetching from Google Maps API...');
     
-    // Validate input parameters
-    if (!source || !destination) {
-      console.log('Missing parameters:', { source, destination });
-      return res.status(400).json({ 
-        error: 'Missing required parameters', 
-        received: { source, destination } 
-      });
-    }
-
-    console.log('Parameters received:', { source, destination });
-    
-    const cacheKey = `${source}-${destination}`;
-    console.log('Checking cache for key:', cacheKey);
-    
-    // Check cache first
-    const cachedResult = cache.get(cacheKey);
-    if (cachedResult) {
-      console.log('Cache hit:', cachedResult);
-      return res.json(cachedResult);
-    }
-    
-    console.log('Cache miss, fetching from Google Maps API...');
-
-    // Fetch new data from Google Maps API
-    const duration = await fetchCommuteTime(source, destination);
+    const duration = await fetchCommuteTime(SOURCE, DESTINATION);
     console.log('Received duration from API:', duration);
     
     // Save to database with timeout
     console.log('Saving to database...');
     const commute = new Commute({
       duration,
-      source,
-      destination,
+      source: SOURCE,
+      destination: DESTINATION,
       dayOfWeek: new Date().toLocaleDateString('en-US', { weekday: 'short' }),
       status: 'success'
     });
@@ -67,6 +42,51 @@ commuteRouter.get('/current', async (req, res, next) => {
     console.log('Caching result...');
     cache.set(cacheKey, { duration });
 
+    return duration;
+  } catch (error) {
+    console.error('Error in scheduled fetch:', {
+      message: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
+}
+
+// Schedule task to run every 15 minutes
+cron.schedule('*/15 * * * *', async () => {
+  console.log('Running scheduled commute time fetch...');
+  try {
+    await fetchAndStoreCommuteTime();
+    console.log('Scheduled fetch completed successfully');
+  } catch (error) {
+    console.error('Scheduled task failed:', error);
+  }
+});
+
+// Test endpoint to verify route functionality
+commuteRouter.get('/test', (req, res) => {
+  console.log('Test endpoint hit');
+  res.json({ status: 'Router is working' });
+});
+
+// Get current commute time
+commuteRouter.get('/current', async (req, res, next) => {
+  console.log('Current commute endpoint hit');
+  
+  try {
+    const cacheKey = `${SOURCE}-${DESTINATION}`;
+    console.log('Checking cache for key:', cacheKey);
+    
+    // Check cache first
+    const cachedResult = cache.get(cacheKey);
+    if (cachedResult) {
+      console.log('Cache hit:', cachedResult);
+      return res.json(cachedResult);
+    }
+    
+    console.log('Cache miss, fetching new data...');
+    const duration = await fetchAndStoreCommuteTime();
+    
     console.log('Sending response...');
     res.json({ duration });
   } catch (error) {
