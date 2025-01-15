@@ -1,5 +1,5 @@
 import express from 'express';
-import { Commute } from '../models/Commute.js';
+import { CommuteSave } from '../models/CommuteSave.js';
 import { cache } from '../index.js';
 import { fetchCommuteTime } from '../services/googleMaps.js';
 import cron from 'node-cron';
@@ -11,10 +11,14 @@ const SOURCE = "Shubha Labha Apartment";
 const DESTINATION = "Docusign RMZ Ecoworld Bengaluru";
 
 // Function to fetch and store commute time
-async function fetchAndStoreCommuteTime() {
+async function fetchAndStoreCommuteTime(direction) {
   console.log('Scheduled fetch starting...');
+  if(!direction) {
+    DESTINATION = "Shubha Labha Apartment";
+    SOURCE = "Docusign RMZ Ecoworld Bengaluru";
+  }
   try {
-    const cacheKey = `${SOURCE}-${DESTINATION}`;
+    // const cacheKey = `${SOURCE}-${DESTINATION}`;
     console.log('Fetching from Google Maps API...');
     
     const duration = await fetchCommuteTime(SOURCE, DESTINATION);
@@ -22,7 +26,7 @@ async function fetchAndStoreCommuteTime() {
     
     // Save to database with timeout
     console.log('Saving to database...');
-    const commute = new Commute({
+    const commute = new CommuteSave({
       duration,
       source: SOURCE,
       destination: DESTINATION,
@@ -52,11 +56,21 @@ async function fetchAndStoreCommuteTime() {
   }
 }
 
-// Schedule task to run every 15 minutes
-cron.schedule('*/15 * * * *', async () => {
+// Schedule task to run every 15 minutes between 7am and 8pm IST
+cron.schedule('*/15 7-12 * * 1-5', async () => {
   console.log('Running scheduled commute time fetch...');
   try {
-    await fetchAndStoreCommuteTime();
+    await fetchAndStoreCommuteTime(true);
+    console.log('Scheduled fetch completed successfully');
+  } catch (error) {
+    console.error('Scheduled task failed:', error);
+  }
+});
+
+cron.schedule('*/15 15-20 * * 1-5', async () => {
+  console.log('Running scheduled commute time fetch...');
+  try {
+    await fetchAndStoreCommuteTime(false);
     console.log('Scheduled fetch completed successfully');
   } catch (error) {
     console.error('Scheduled task failed:', error);

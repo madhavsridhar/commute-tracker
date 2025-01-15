@@ -33,4 +33,4 @@ const commuteSchema = new mongoose.Schema({
 commuteSchema.index({ timestamp: -1 });
 commuteSchema.index({ dayOfWeek: 1 });
 
-export const Commute = mongoose.model('Commute', commuteSchema);
+export const Commute = mongoose.model('CommuteSave', commuteSchema);
