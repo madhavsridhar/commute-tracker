@@ -43,8 +43,8 @@ async function fetchAndStoreCommuteTime(direction) {
     console.log('Successfully saved to database');
 
     // Cache the result
-    console.log('Caching result...');
-    cache.set(cacheKey, { duration });
+    // console.log('Caching result...');
+    // cache.set(cacheKey, { duration });
 
     return duration;
   } catch (error) {
@@ -57,7 +57,7 @@ async function fetchAndStoreCommuteTime(direction) {
 }
 
 // Schedule task to run every 15 minutes between 7am and 8pm IST
-cron.schedule('*/15 7-12 * * 1-5', async () => {
+cron.schedule('*/15 2-10 * * 1-5', async () => {
   console.log('Running scheduled commute time fetch...');
   try {
     await fetchAndStoreCommuteTime(true);
@@ -67,7 +67,7 @@ cron.schedule('*/15 7-12 * * 1-5', async () => {
   }
 });
 
-cron.schedule('*/15 15-20 * * 1-5', async () => {
+cron.schedule('*/15 11-15 * * 1-5', async () => {
   console.log('Running scheduled commute time fetch...');
   try {
     await fetchAndStoreCommuteTime(false);
