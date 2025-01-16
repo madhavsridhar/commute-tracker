@@ -7,8 +7,8 @@ import cron from 'node-cron';
 export const commuteRouter = express.Router();
 
 const LOCATIONS = {
-  HOME: "Shubha Labha Apartment",
-  OFFICE: "Docusign International India Pvt Ltd, Suite 604, Building #32, RMZ Ecoworld"
+  HOME: "WM58%2BRM Haralur, Karnataka",
+  OFFICE: "WMCQ%2B42 Bengaluru, Karnataka"
 };
 
 // Function to fetch and store commute time
