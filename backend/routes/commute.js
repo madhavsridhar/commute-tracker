@@ -8,7 +8,7 @@ export const commuteRouter = express.Router();
 
 const LOCATIONS = {
   HOME: "Shubha Labha Apartment",
-  OFFICE: "Docusign RMZ Ecoworld Bengaluru"
+  OFFICE: "Docusign International India Pvt Ltd, Suite 604, Building #32, RMZ Ecoworld"
 };
 
 // Function to fetch and store commute time
@@ -158,4 +158,18 @@ commuteRouter.get('/weekly-averages', async (req, res, next) => {
     console.error('Error in /weekly-averages endpoint:', error);
     next(error);
   }
+});
+
+// Add this new route handler
+commuteRouter.get('/trends', async (req, res) => {
+    try {
+        const trends = await CommuteSave.find({})
+            .sort({ timestamp: -1 })
+            .limit(100)  // Limit to last 100 records for performance
+            .select('timestamp duration source destination');
+        res.json(trends);
+    } catch (error) {
+        console.error('Error fetching trend data:', error);
+        res.status(500).json({ error: 'Failed to fetch trend data' });
+    }
 });

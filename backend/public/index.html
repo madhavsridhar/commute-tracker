@@ -75,6 +75,17 @@
     </div>
 
     <div class="dashboard">
+        
+        <div class="card">
+            <h2>Home to Office Trend</h2>
+            <canvas id="homeToOfficeChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>Office to Home Trend</h2>
+            <canvas id="officeToHomeChart"></canvas>
+        </div>
+
         <div class="card">
             <h2>Current Commute Time</h2>
             <div class="current-time" id="currentTime">-</div>
@@ -98,10 +109,14 @@
             <h2>Weekly Averages</h2>
             <canvas id="weeklyChart"></canvas>
         </div>
+
+        
     </div>
 
     <script>
         let weeklyChart = null;
+        let homeToOfficeChart = null;
+        let officeToHomeChart = null;
 
         async function fetchCurrentCommute() {
             const source = document.getElementById('source').value;
@@ -186,10 +201,84 @@
             }
         }
 
-        // Initial load
-        fetchCurrentCommute();
+        async function fetchTrendData() {
+            try {
+                const response = await fetch('/api/commute/trends');
+                const data = await response.json();
+                
+                // Infer direction based on source location
+                const homeToOfficeData = data.filter(d => d.source === "Shubha Labha Apartment");
+                const officeToHomeData = data.filter(d => d.source === "Docusign RMZ Ecoworld Bengaluru");
+                
+                updateTrendChart('homeToOfficeChart', homeToOfficeData, 'Home to Office');
+                updateTrendChart('officeToHomeChart', officeToHomeData, 'Office to Home');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function updateTrendChart(chartId, data, label) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            
+            // Sort data by timestamp
+            data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            // Prepare data for chart
+            const chartData = {
+                labels: data.map(d => new Date(d.timestamp).toLocaleTimeString()),
+                datasets: [{
+                    label: label,
+                    data: data.map(d => d.duration),
+                    borderColor: '#007bff',
+                    tension: 0.4,
+                    fill: false
+                }]
+            };
+
+            // Destroy existing chart if it exists
+            if (chartId === 'homeToOfficeChart' && homeToOfficeChart) {
+                homeToOfficeChart.destroy();
+            } else if (chartId === 'officeToHomeChart' && officeToHomeChart) {
+                officeToHomeChart.destroy();
+            }
+
+            // Create new chart
+            const newChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Duration (minutes)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Store chart reference
+            if (chartId === 'homeToOfficeChart') {
+                homeToOfficeChart = newChart;
+            } else if (chartId === 'officeToHomeChart') {
+                officeToHomeChart = newChart;
+            }
+        }
+
+        // Update initial load to include trend data
+        // fetchCurrentCommute();
         fetchHistory();
         fetchWeeklyAverages();
+        fetchTrendData();
     </script>
 </body>
 </html>
