@@ -6,30 +6,28 @@ import cron from 'node-cron';
 
 export const commuteRouter = express.Router();
 
-// Hardcoded locations
-var SOURCE = "Shubha Labha Apartment";
-var DESTINATION = "Docusign RMZ Ecoworld Bengaluru";
+const LOCATIONS = {
+  HOME: "Shubha Labha Apartment",
+  OFFICE: "Docusign RMZ Ecoworld Bengaluru"
+};
 
 // Function to fetch and store commute time
 async function fetchAndStoreCommuteTime(direction) {
   console.log('Scheduled fetch starting...');
-  if(!direction) {
-    DESTINATION = "Shubha Labha Apartment";
-    SOURCE = "Docusign RMZ Ecoworld Bengaluru";
-  }
+  const source = direction ? LOCATIONS.HOME : LOCATIONS.OFFICE;
+  const destination = direction ? LOCATIONS.OFFICE : LOCATIONS.HOME;
+  
   try {
-    // const cacheKey = `${SOURCE}-${DESTINATION}`;
     console.log('Fetching from Google Maps API...');
-    
-    const duration = await fetchCommuteTime(SOURCE, DESTINATION);
+    const duration = await fetchCommuteTime(source, destination);
     console.log('Received duration from API:', duration);
     
     // Save to database with timeout
     console.log('Saving to database...');
     const commute = new CommuteSave({
       duration,
-      source: SOURCE,
-      destination: DESTINATION,
+      source: source,
+      destination: destination,
       dayOfWeek: new Date().toLocaleDateString('en-US', { weekday: 'short' }),
       status: 'success'
     });
@@ -88,7 +86,7 @@ commuteRouter.get('/current', async (req, res, next) => {
   console.log('Current commute endpoint hit');
   
   try {
-    const cacheKey = `${SOURCE}-${DESTINATION}`;
+    const cacheKey = `${LOCATIONS.HOME}-${LOCATIONS.OFFICE}`;
     console.log('Checking cache for key:', cacheKey);
     
     // Check cache first
@@ -120,7 +118,7 @@ commuteRouter.get('/history', async (req, res, next) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
 
-    const history = await Commute.find({
+    const history = await CommuteSave.find({
       timestamp: { $gte: startDate },
       status: 'success'
     })
@@ -138,7 +136,7 @@ commuteRouter.get('/history', async (req, res, next) => {
 commuteRouter.get('/weekly-averages', async (req, res, next) => {
   console.log('Weekly averages endpoint hit');
   try {
-    const averages = await Commute.aggregate([
+    const averages = await CommuteSave.aggregate([
       {
         $match: {
           status: 'success',
