@@ -207,8 +207,14 @@
                 const data = await response.json();
                 
                 // Infer direction based on source location
-                const homeToOfficeData = data.filter(d => d.source === "Shubha Labha Apartment");
-                const officeToHomeData = data.filter(d => d.source === "Docusign RMZ Ecoworld Bengaluru");
+                const homeToOfficeData = data.filter(d => 
+                    d.source === "WM58%2BRM Haralur, Karnataka" && 
+                    d.duration < 44
+                );
+                const officeToHomeData = data.filter(d => 
+                    d.source === "WMCQ%2B42 Bengaluru, Karnataka" && 
+                    d.duration < 44
+                );
                 
                 updateTrendChart('homeToOfficeChart', homeToOfficeData, 'Home to Office');
                 updateTrendChart('officeToHomeChart', officeToHomeData, 'Office to Home');
