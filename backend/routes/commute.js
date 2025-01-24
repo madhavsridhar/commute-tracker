@@ -163,9 +163,14 @@ commuteRouter.get('/weekly-averages', async (req, res, next) => {
 // Add this new route handler
 commuteRouter.get('/trends', async (req, res) => {
     try {
+        // Add cache control headers
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.set('Expires', '-1');
+        res.set('Pragma', 'no-cache');
+
         const trends = await CommuteSave.find({})
             .sort({ timestamp: -1 })
-            .limit(100)  // Limit to last 100 records for performance
+            .limit(100)
             .select('timestamp duration source destination');
         res.json(trends);
     } catch (error) {

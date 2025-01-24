@@ -267,28 +267,34 @@
 
         async function fetchTrendData() {
             try {
-                const response = await fetch('/api/commute/trends');
+                const response = await fetch('/api/commute/trends?' + new Date().getTime());
                 const data = await response.json();
                 
-                // Infer direction based on source location
                 const homeToOfficeData = data.filter(d => 
-                    d.source === "WM58%2BRM Haralur, Karnataka" && 
+                    d.source === "WM58%2BRM%20Haralur,%20Karnataka" && 
                     d.duration < 44
                 );
+                
                 const officeToHomeData = data.filter(d => 
-                    d.source === "WMCQ%2B42 Bengaluru, Karnataka" && 
+                    d.source === "WMCQ%2B42%20Bengaluru,%20Karnataka" && 
                     d.duration < 44
                 );
                 
                 updateTrendChart('homeToOfficeChart', homeToOfficeData, 'Home to Office');
                 updateTrendChart('officeToHomeChart', officeToHomeData, 'Office to Home');
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error fetching trend data:', error);
             }
         }
 
         function updateTrendChart(chartId, data, label) {
+            console.log(`Updating ${chartId} with ${data.length} data points`);
             const ctx = document.getElementById(chartId).getContext('2d');
+            
+            if (data.length === 0) {
+                console.warn(`No data available for ${chartId}`);
+                return;
+            }
             
             // Sort data by timestamp
             data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -349,6 +355,9 @@
         fetchHistory();
         fetchWeeklyAverages();
         fetchTrendData();
+
+        // Set up periodic refresh every 15 minutes (15 * 60 * 1000 milliseconds)
+        setInterval(fetchTrendData, 15 * 60 * 1000);
     </script>
 </body>
 </html>
