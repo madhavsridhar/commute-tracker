@@ -5,9 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Commute Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <style>
+
+        :root {
+        font-family: Inter, sans-serif;
+        font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
+        }
+        @supports (font-variation-settings: normal) {
+        :root { font-family: InterVariable, sans-serif; }
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: "InterVariable", BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-feature-settings: "ss01" 1, "ss02" 1, "tnum" 1, "zero" 1;
+            font-style: italic;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
@@ -15,21 +28,28 @@
         }
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(6, 1fr);  /* Six columns for more granular control */
+            grid-template-rows: auto auto;  /* Two rows */
             gap: 20px;
-            margin-top: 20px;
+            padding: 20px;
         }
         .card {
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 400px;
+            overflow: hidden;
         }
         .current-time {
-            font-size: 2em;
-            color: #2c3e50;
-            text-align: center;
-            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: calc(100% - 40px);  /* Subtract space for the header */
+            font-size: 4em;
+        }
+        h2{
+            font-weight: 500;
         }
         table {
             width: 100%;
@@ -38,11 +58,15 @@
         }
         th, td {
             padding: 8px;
+            font-weight: 300;
+            font-size: 0.75rem;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
         th {
             background-color: #f8f9fa;
+            font-weight: 500;
+
         }
         .inputs {
             display: flex;
@@ -53,6 +77,8 @@
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            font-style: italic;
+            font-weight: 500;
         }
         button {
             background: #007bff;
@@ -62,6 +88,36 @@
         }
         button:hover {
             background: #0056b3;
+        }
+        .table-container {
+            height: calc(100% - 40px);  /* Subtract space for the header */
+            overflow-y: auto;  /* Add vertical scroll */
+            scrollbar-width: thin;  /* For Firefox */
+        }
+        /* Webkit scrollbar styling */
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* First row - trend cards */
+        #homeToOfficeChart-card,
+        #officeToHomeChart-card {
+            grid-column: span 3;  /* Each takes half the width (3 columns) */
+        }
+        /* Second row - three equal cards */
+        #current-time-card,
+        #history-card,
+        #weekly-averages-card {
+            grid-column: span 2;  /* Each takes one-third width (2 columns) */
         }
     </style>
 </head>
@@ -75,42 +131,43 @@
     </div>
 
     <div class="dashboard">
-        
-        <div class="card">
+        <!-- First row -->
+        <div class="card" id="homeToOfficeChart-card">
             <h2>Home to Office Trend</h2>
             <canvas id="homeToOfficeChart"></canvas>
         </div>
 
-        <div class="card">
+        <div class="card" id="officeToHomeChart-card">
             <h2>Office to Home Trend</h2>
             <canvas id="officeToHomeChart"></canvas>
         </div>
 
-        <div class="card">
+        <!-- Second row -->
+        <div class="card" id="current-time-card">
             <h2>Current Commute Time</h2>
             <div class="current-time" id="currentTime">-</div>
         </div>
-        
-        <div class="card">
+
+        <div class="card" id="history-card">
             <h2>History</h2>
-            <table id="historyTable">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Duration (min)</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <div class="table-container">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Duration (min)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
-        
-        <div class="card">
+
+        <div class="card" id="weekly-averages-card">
             <h2>Weekly Averages</h2>
             <canvas id="weeklyChart"></canvas>
         </div>
-
-        
     </div>
 
     <script>
@@ -141,20 +198,27 @@
                 const response = await fetch('/api/commute/history');
                 const data = await response.json();
                 
+                // Update history table
                 const tbody = document.querySelector('#historyTable tbody');
                 tbody.innerHTML = '';
                 
                 data.forEach(record => {
+                    const date = new Date(record.timestamp);
                     const row = document.createElement('tr');
-                    const date = new Date(record.timestamp).toLocaleDateString();
-                    const time = new Date(record.timestamp).toLocaleTimeString();
                     row.innerHTML = `
-                        <td>${date}</td>
-                        <td>${time}</td>
+                        <td>${date.toLocaleDateString()}</td>
+                        <td>${date.toLocaleTimeString()}</td>
                         <td>${record.duration.toFixed(1)}</td>
                     `;
                     tbody.appendChild(row);
                 });
+
+                // Set the latest record as the default value in current time card
+                if (data.length > 0) {
+                    const latestRecord = data[0];  // Assuming data is sorted newest first
+                    document.getElementById('currentTime').textContent = 
+                        `${latestRecord.duration.toFixed(1)} min`;
+                }
             } catch (error) {
                 console.error('Error:', error);
             }
